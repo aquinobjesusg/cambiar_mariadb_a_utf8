@@ -1,0 +1,87 @@
+/* ¡IMPORTANTE!
+ * Este es un tutorial para convertir la codificación de bases de datos de
+ * latin1 a utf8. MySQL anteriormente solo utilizaba codificación latin1, y una
+ * colación latin1_swedish_ci.
+ */
+
+ /* Algoritmo:
+ * Al convertir los campos a su valor en binario, se puede cambiar la
+ * codificación, sin tener que preocuparse por los caracteres especiales:
+ * CHAR -> BINARY
+ * VARCHAR -> VARBINARY
+ * TINYTEXT -> TINYBLOB
+ * TEXT -> BLOB
+ * MEDIUMTEXT -> MEDIUMBLOB
+ * LONGTEXT -> LONGBLOB
+ * Los siguientes queries nos ayudan en convertir a y regresar de binario.
+*/
+
+/* intranetdev
+ * Se infiere que la base de datos se llama intranetdev.
+ */
+
+/* Correr en information_schema
+ * El código SQL de estos queries se debe correr en la base de datos llamada
+ * information_schema. Los queries generan código SQL que se debe correr en la
+ * base de datos 'intranetdev'.
+ */
+
+USE information_schema;
+
+/* I. Identificar binarios preexistentes
+ * Este SQL -- así como el siguiente paso -- es un paso de precaución; hay que
+ * anotar los campos que aparezcan aquí, para identificar cuáles campos ya eran
+ * de tipo binario. Si no aparecen campos, es motivo de alegría.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'binary', 'char'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%binary%';
+
+/* II. Identificar blobs preexistentes
+ * Este SQL también es un paso de precaución; hay que anotar los campos que
+ * aparezcan aquí. Aquí buscamos los campos de tipo blob. Si no aparecen
+ * campos, es motivo de alegría.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'blob', 'text'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%blob%';
+
+/* III. CHAR -> BINARY
+ * Conversión de cualquier tipo de Char a su correspondiente Binario.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'char', 'binary'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%char%';
+
+/* IV. TEXT -> BLOB
+ * Conversión de cualquier tipo de Texto a su correspondiente Blob.
+ */
+
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'text', 'blob'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%text%';
+
+/* V. Convertir intranetdev de latin1 a utf8
+* Esto convierte y asigna una colación en Unicode a la base de datos. Pero aún
+* falta considerar las tablas y los campos en particular.
+*/
+ALTER DATABASE intranetdev DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;
+
+/* VI. Convertir Tablas de intranetdev de latin1 a utf8
+* Este query es para cambiar la codificación de las tablas.
+*/
+SELECT CONCAT('ALTER TABLE ', table_name, ' DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci;') FROM tables WHERE table_schema = 'intranetdev';
+
+/* VII. Convertir Campos de tipo Char de las Tablas de intranetdev de latin1 a utf8
+ * Este query es para cambiar la codificación los chars de las tablas.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', column_type, ' CHARACTER SET utf8 COLLATE utf8_unicode_ci;') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%char%';
+
+/* VIII. Convertir Campos de tipo Text de las Tablas de intranetdev de latin1 a utf8
+ * Este query es para cambiar la codificación los textos de las tablas.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', column_type, ' CHARACTER SET utf8 COLLATE utf8_unicode_ci;') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%text%';
+
+/* IX. BINARY -> CHAR
+ * Convierte los binarios a chars. Hay que manualmente eliminar queries de los
+ * resultados de el paso I.
+ */
+
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'binary', 'char'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%binary%';
+/* X. BLOB -> TEXT
+ * Revierte los blobs a textos. Hay que manualmente eliminar queries de los
+ * resultados de el paso II.
+ */
+SELECT CONCAT('ALTER TABLE ', table_name, ' MODIFY ', column_name, ' ', REPLACE(column_type, 'blob', 'text'), ';') FROM COLUMNS WHERE table_schema = 'intranetdev' AND data_type LIKE '%blob%';
